@@ -108,8 +108,17 @@ seed_one() {
     fi
 }
 seed_one ".env" ".env.example"
-seed_one "config.yaml" "cli-config.yaml.example"
 seed_one "SOUL.md" "docker/SOUL.md"
+
+# --- Always re-seed config.yaml from example ---
+# Unlike .env and SOUL.md which are user-customized, config.yaml should
+# always reflect the latest cli-config.yaml.example from the image.
+# This ensures provider/model changes in the Dockerfile take effect on
+# every deploy, not just the first boot.
+if [ -f "$INSTALL_DIR/cli-config.yaml.example" ]; then
+    echo "[stage2] Seeding config.yaml from cli-config.yaml.example"
+    s6-setuidgid hermes cp "$INSTALL_DIR/cli-config.yaml.example" "$HERMES_HOME/config.yaml"
+fi
 
 # auth.json: bootstrap from env on first boot only. Same semantics as the
 # pre-s6 entrypoint — the [ ! -f ] guard is critical to avoid clobbering
