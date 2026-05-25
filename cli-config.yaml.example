@@ -11,8 +11,8 @@ model:
   default: "mimo-v2.5-pro"
   
   # Inference provider selection:
-  #   "xiaomi" - Xiaomi MiMo (requires: XIAOMI_API_KEY)
-  provider: "xiaomi"
+  #   "custom" - OpenAI-compatible API (works with MiMo and any compatible endpoint)
+  provider: "custom"
   
   # API configuration - reads from XIAOMI_API_KEY environment variable
   api_key: "${XIAOMI_API_KEY}"
