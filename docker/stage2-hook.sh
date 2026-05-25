@@ -140,4 +140,12 @@ if [ -d "$INSTALL_DIR/skills" ]; then
         || echo "[stage2] Warning: skills_sync.py failed; continuing"
 fi
 
+# --- Start background HTTP server for Render port detection ---
+# Render free tier web services require an open HTTP port for health
+# checks. Hermes gateway only does Telegram long-polling and doesn't
+# bind to any port. Start a lightweight python HTTP server in the
+# background so Render's port probe succeeds.
+s6-setuidgid hermes sh -c 'cd /tmp && python3 -m http.server ${PORT:-10000} &' 2>/dev/null || true
+echo "[stage2] Background HTTP server started on port ${PORT:-10000}"
+
 echo "[stage2] Setup complete; starting user services"
