@@ -120,6 +120,28 @@ if [ -f "$INSTALL_DIR/cli-config.yaml.example" ]; then
     s6-setuidgid hermes cp "$INSTALL_DIR/cli-config.yaml.example" "$HERMES_HOME/config.yaml"
 fi
 
+# --- Resolve API key placeholders in config.yaml ---
+# Hermes's load_hermes_dotenv() uses override=True, which can clobber
+# environment variables. To ensure the API key is always available,
+# replace ${XIAOMI_API_KEY} with the actual value from the environment.
+if [ -f "$HERMES_HOME/config.yaml" ] && [ -n "${XIAOMI_API_KEY:-}" ]; then
+    sed -i "s|\${XIAOMI_API_KEY}|${XIAOMI_API_KEY}|g" "$HERMES_HOME/config.yaml"
+    echo "[stage2] Resolved XIAOMI_API_KEY in config.yaml"
+fi
+
+# --- Inject API keys into .env for hermes auth gate ---
+# _has_any_provider_configured() checks env vars AND .env file.
+# load_hermes_dotenv() loads .env with override=True, so we must
+# ensure the keys are present in .env (not just in shell env).
+if [ -n "${OPENAI_API_KEY:-}" ]; then
+    if ! grep -q '^OPENAI_API_KEY=' "$HERMES_HOME/.env" 2>/dev/null; then
+        echo "OPENAI_API_KEY=${OPENAI_API_KEY}" >> "$HERMES_HOME/.env"
+    else
+        sed -i "s|^OPENAI_API_KEY=.*|OPENAI_API_KEY=${OPENAI_API_KEY}|" "$HERMES_HOME/.env"
+    fi
+    echo "[stage2] Injected OPENAI_API_KEY into .env"
+fi
+
 # auth.json: bootstrap from env on first boot only. Same semantics as the
 # pre-s6 entrypoint — the [ ! -f ] guard is critical to avoid clobbering
 # rotated refresh tokens on container restart.
